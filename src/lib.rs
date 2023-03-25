@@ -1,4 +1,10 @@
 //! UsbClass implementation for the picotool reset feature.
+//!
+//! ## Note
+//!
+//! For picotool to recognize your device, your device must be using Raspberry Pi's vendor ID (`0x2e8a`)
+//! and one of the product ID. You can check [picotool's sources](https://github.com/raspberrypi/picotool/blob/master/picoboot_connection/picoboot_connection.c#L23-L27)
+//! for an exhaustive list.
 
 #![forbid(missing_docs)]
 #![no_std]
