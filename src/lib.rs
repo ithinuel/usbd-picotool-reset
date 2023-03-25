@@ -1,3 +1,6 @@
+//! UsbClass implementation for the picotool reset feature.
+
+#![forbid(missing_docs)]
 #![no_std]
 
 use core::marker::PhantomData;
@@ -10,41 +13,57 @@ const CLASS_VENDOR_SPECIFIC: u8 = 0xFF;
 const RESET_INTERFACE_SUBCLASS: u8 = 0x00;
 const RESET_INTERFACE_PROTOCOL: u8 = 0x01;
 const RESET_REQUEST_BOOTSEL: u8 = 0x01;
-const RESET_REQUEST_FLASH: u8 = 0x02;
+//const RESET_REQUEST_FLASH: u8 = 0x02;
 
+/// Defines which feature of the bootloader are made available after reset.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum DisableInterface {
-    BothEnabled = 0,
-    DisableMassStorage = 1,
-    DisablePicoBoot = 2,
+    /// Both Mass Storage and Pico boot are enabled.
+    None,
+    /// Disables Mass Storage leaving only PicoBoot.
+    DisableMassStorage,
+    /// Disables PicoBoot leaving only Mass Storage.
+    DisablePicoBoot,
 }
 impl DisableInterface {
     const fn into(self) -> u32 {
         match self {
-            DisableInterface::BothEnabled => 0,
+            DisableInterface::None => 0,
             DisableInterface::DisableMassStorage => 1,
             DisableInterface::DisablePicoBoot => 2,
         }
     }
 }
+
+/// Allows to customize the configuration of the UsbClass.
 pub trait Config {
-    const INTERFACE_DISABLE_MASK: DisableInterface;
+    /// Configuration for which interface to enable/disable after reset.
+    const INTERFACE_DISABLE: DisableInterface;
+    /// Configuration for which pin to show mass storage activity after reset.
     const BOOTSEL_ACTIVITY_LED: Option<usize>;
 }
 
+/// Default configuration for PicoTool class.
+///
+/// This lets both interface enabled after reset and does not display mass storage activity on any
+/// LED.
 pub enum DefaultConfig {}
 impl Config for DefaultConfig {
-    const INTERFACE_DISABLE_MASK: DisableInterface = DisableInterface::BothEnabled;
+    const INTERFACE_DISABLE: DisableInterface = DisableInterface::None;
 
     const BOOTSEL_ACTIVITY_LED: Option<usize> = None;
 }
 
-pub struct PicoToolsReset<'a, B: UsbBus, C: Config = DefaultConfig> {
+/// UsbClass implementation for Picotool's reset feature.
+pub struct PicoToolReset<'a, B: UsbBus, C: Config = DefaultConfig> {
     intf: InterfaceNumber,
     _bus: PhantomData<&'a B>,
     _cnf: PhantomData<C>,
 }
-impl<'a, B: UsbBus, C: Config> PicoToolsReset<'a, B, C> {
-    pub fn new(alloc: &'a UsbBusAllocator<B>) -> PicoToolsReset<'a, B, C> {
+impl<'a, B: UsbBus, C: Config> PicoToolReset<'a, B, C> {
+    /// Creates a new instance of PicoToolReset.
+    pub fn new(alloc: &'a UsbBusAllocator<B>) -> PicoToolReset<'a, B, C> {
         Self {
             intf: alloc.interface(),
             _bus: PhantomData,
@@ -53,7 +72,7 @@ impl<'a, B: UsbBus, C: Config> PicoToolsReset<'a, B, C> {
     }
 }
 
-impl<B: UsbBus, C: Config> usb_device::class::UsbClass<B> for PicoToolsReset<'_, B, C> {
+impl<B: UsbBus, C: Config> usb_device::class::UsbClass<B> for PicoToolReset<'_, B, C> {
     fn get_configuration_descriptors(
         &self,
         writer: &mut usb_device::descriptor::DescriptorWriter,
@@ -85,17 +104,21 @@ impl<B: UsbBus, C: Config> usb_device::class::UsbClass<B> for PicoToolsReset<'_,
                 }
                 rp2040_hal::rom_data::reset_to_usb_boot(
                     gpio_mask,
-                    u32::from(req.value & 0x7F) | C::INTERFACE_DISABLE_MASK.into(),
-                )
+                    u32::from(req.value & 0x7F) | C::INTERFACE_DISABLE.into(),
+                );
+                // no-need to accept/reject, we'll reset the device anyway
+                unreachable!()
             }
-            RESET_REQUEST_FLASH => todo!(),
+            //RESET_REQUEST_FLASH => todo!(),
             _ => {
-                let _ = xfer.accept();
+                // we are not expecting any other USB OUT requests
+                let _ = xfer.reject();
             }
         }
     }
 
     fn control_in(&mut self, xfer: usb_device::class_prelude::ControlIn<B>) {
-        let _ = xfer;
+        // we are not expecting any USB IN requests
+        let _ = xfer.reject();
     }
 }

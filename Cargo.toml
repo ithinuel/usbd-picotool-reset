@@ -2,10 +2,19 @@
 name = "usbd-picotool-reset"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
+authors = ["The rp-rs Developers"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+features = ["defmt"]
+targets = ["thumbv6m-none-eabi"]
 
 [dependencies]
 usb-device = "0.2.9"
 rp2040-hal = "0.8.0"
+defmt = { version = ">=0.2.0, <0.4", optional = true }
+
+[dev-dependencies]
+rp-pico = "*"
+panic-halt = "*"
+cortex-m-rt = "*"
