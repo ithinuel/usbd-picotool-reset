@@ -11,10 +11,7 @@
 
 use panic_halt as _;
 
-use rp_pico::hal::pac;
-use rp_pico::hal;
-use rp_pico::entry;
-
+use rp_pico::{hal::{pac, self}, entry, XOSC_CRYSTAL_FREQ};
 // USB Device support
 use usb_device::{class_prelude::*, prelude::*};
 
@@ -34,7 +31,7 @@ fn main() -> ! {
     //
     // The default is to generate a 125 MHz system clock
     let clocks = hal::clocks::init_clocks_and_plls(
-        rp_pico::XOSC_CRYSTAL_FREQ,
+        XOSC_CRYSTAL_FREQ,
         pac.XOSC,
         pac.CLOCKS,
         pac.PLL_SYS,
@@ -68,15 +65,17 @@ fn main() -> ! {
     // Set up the USB PicoTool Class Device driver
     let mut picotool: PicoToolReset<_> = PicoToolReset::new(&usb_bus);
 
-    // Create a USB device with a fake VID and PID
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
+    // Create a USB device RPI Vendor ID and on of these Product ID:
+    // https://github.com/raspberrypi/picotool/blob/master/picoboot_connection/picoboot_connection.c#L23-L27
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x2e8a, 0x000a))
         .manufacturer("Fake company")
         .product("Picotool port")
         .serial_number("TEST")
-        .device_class(0xFF) // from: https://www.usb.org/defined-class-codes
+        .device_class(0) // from: https://www.usb.org/defined-class-codes
         .build();
 
     loop {
         usb_dev.poll(&mut [&mut picotool]) ;
     }
 }
+

@@ -5,7 +5,7 @@
 
 use core::marker::PhantomData;
 
-use usb_device::class_prelude::{InterfaceNumber, UsbBus, UsbBusAllocator};
+use usb_device::class_prelude::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
 
 // Vendor specific class
 const CLASS_VENDOR_SPECIFIC: u8 = 0xFF;
@@ -58,6 +58,7 @@ impl Config for DefaultConfig {
 /// UsbClass implementation for Picotool's reset feature.
 pub struct PicoToolReset<'a, B: UsbBus, C: Config = DefaultConfig> {
     intf: InterfaceNumber,
+    str_idx: StringIndex,
     _bus: PhantomData<&'a B>,
     _cnf: PhantomData<C>,
 }
@@ -66,6 +67,7 @@ impl<'a, B: UsbBus, C: Config> PicoToolReset<'a, B, C> {
     pub fn new(alloc: &'a UsbBusAllocator<B>) -> PicoToolReset<'a, B, C> {
         Self {
             intf: alloc.interface(),
+            str_idx: alloc.string(),
             _bus: PhantomData,
             _cnf: PhantomData,
         }
@@ -77,15 +79,19 @@ impl<B: UsbBus, C: Config> usb_device::class::UsbClass<B> for PicoToolReset<'_, 
         &self,
         writer: &mut usb_device::descriptor::DescriptorWriter,
     ) -> usb_device::Result<()> {
-        writer.interface(
+        writer.interface_alt(
             self.intf,
+            0,
             CLASS_VENDOR_SPECIFIC,
             RESET_INTERFACE_SUBCLASS,
             RESET_INTERFACE_PROTOCOL,
+            Some(self.str_idx),
         )
     }
 
-    fn reset(&mut self) {}
+    fn get_string(&self, index: StringIndex, _lang_id: u16) -> Option<&str> {
+        (index == self.str_idx).then_some("Reset")
+    }
 
     fn control_out(&mut self, xfer: usb_device::class_prelude::ControlOut<B>) {
         let req = xfer.request();
@@ -118,6 +124,13 @@ impl<B: UsbBus, C: Config> usb_device::class::UsbClass<B> for PicoToolReset<'_, 
     }
 
     fn control_in(&mut self, xfer: usb_device::class_prelude::ControlIn<B>) {
+        let req = xfer.request();
+        if !(req.request_type == usb_device::control::RequestType::Class
+            && req.recipient == usb_device::control::Recipient::Interface
+            && req.index == u8::from(self.intf) as u16)
+        {
+            return;
+        }
         // we are not expecting any USB IN requests
         let _ = xfer.reject();
     }
