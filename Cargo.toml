@@ -14,10 +14,10 @@ targets = ["thumbv6m-none-eabi"]
 
 [dependencies]
 usb-device = "0.2.9"
-rp2040-hal = "0.8.0"
+rp2040-hal = "0.9.0"
 defmt = { version = ">=0.2.0, <0.4", optional = true }
 
 [dev-dependencies]
-rp-pico = "0.7.0"
+rp-pico = "0.8.0"
 panic-halt = "0.2.0"
 cortex-m-rt = "0.7.3"
