@@ -1,6 +1,6 @@
 [package]
 name = "usbd-picotool-reset"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["The rp-rs Developers"]
@@ -13,11 +13,11 @@ features = ["defmt"]
 targets = ["thumbv6m-none-eabi"]
 
 [dependencies]
-usb-device = "0.2.9"
-rp2040-hal = "0.9.0"
+usb-device = "0.3.2"
+rp2040-hal = "0.10.1"
 defmt = { version = ">=0.2.0, <0.4", optional = true }
 
 [dev-dependencies]
-rp-pico = "0.8.0"
+rp-pico = "0.9.0"
 panic-halt = "0.2.0"
 cortex-m-rt = "0.7.3"

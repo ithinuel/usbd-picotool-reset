@@ -11,13 +11,16 @@
 
 use panic_halt as _;
 
-use rp_pico::{hal::{pac, self}, entry, XOSC_CRYSTAL_FREQ};
+use rp_pico::{
+    entry,
+    hal::{self, pac},
+    XOSC_CRYSTAL_FREQ,
+};
 // USB Device support
 use usb_device::{class_prelude::*, prelude::*};
 
 // USB PicoTool Class Device support
 use usbd_picotool_reset::PicoToolReset;
-
 
 #[entry]
 fn main() -> ! {
@@ -68,14 +71,15 @@ fn main() -> ! {
     // Create a USB device RPI Vendor ID and on of these Product ID:
     // https://github.com/raspberrypi/picotool/blob/master/picoboot_connection/picoboot_connection.c#L23-L27
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x2e8a, 0x000a))
-        .manufacturer("Fake company")
-        .product("Picotool port")
-        .serial_number("TEST")
+        .strings(&[StringDescriptors::new(LangID::EN)
+            .manufacturer("Fake company")
+            .product("Picotool port")
+            .serial_number("TEST")])
+            .expect("Failed to set strings")
         .device_class(0) // from: https://www.usb.org/defined-class-codes
         .build();
 
     loop {
-        usb_dev.poll(&mut [&mut picotool]) ;
+        usb_dev.poll(&mut [&mut picotool]);
     }
 }
-
