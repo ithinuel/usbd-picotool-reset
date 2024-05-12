@@ -75,7 +75,7 @@ fn main() -> ! {
             .manufacturer("Fake company")
             .product("Picotool port")
             .serial_number("TEST")])
-            .expect("Failed to set strings")
+        .expect("Failed to set strings")
         .device_class(0) // from: https://www.usb.org/defined-class-codes
         .build();
 

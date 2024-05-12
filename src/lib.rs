@@ -10,8 +10,8 @@
 #![no_std]
 
 use core::marker::PhantomData;
-use usb_device::LangID;
 use usb_device::class_prelude::{InterfaceNumber, StringIndex, UsbBus, UsbBusAllocator};
+use usb_device::LangID;
 
 // Vendor specific class
 const CLASS_VENDOR_SPECIFIC: u8 = 0xFF;
